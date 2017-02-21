@@ -24,3 +24,4 @@ module.exports =
 				break
 		if drainedCount < N
 			logger.log "All clients have been told to reconnectGracefully"
+			clearInterval @interval
