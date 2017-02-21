@@ -6,22 +6,26 @@ module.exports =
 		clearInterval @interval
 		if rate == 0
 			return
-		@interval = setInterval () =>
-			@reconnectNClients(io, rate)
-		, 1000
 
-	RECONNECTED_CLIENTS: {}
-	reconnectNClients: (io, N) ->
-		drainedCount = 0
-		for client in io.sockets.clients()
-			if !@RECONNECTED_CLIENTS[client.id]
-				@RECONNECTED_CLIENTS[client.id] = true
+		# Get current list of clients to disconnect
+		clients = io.sockets.clients()
+
+		# Set a 1 second interval and disconnect <rate> clients each time
+		@interval = setInterval () =>
+			if !clients.length
+				clearInterval @interval
+				return
+			doDrain clients, rate
+		,1000
+
+	drainClients: (clients, rate) ->
+
+			clientSet = clients.splice(0, rate)
+
+			if !clientSet
+				logger.log "All clients have been told to reconnectGracefully"
+				return
+
+			for client in clientSet
 				logger.log {client_id: client.id}, "Asking client to reconnect gracefully"
 				client.emit "reconnectGracefully"
-				drainedCount++
-			haveDrainedNClients = (drainedCount == N)
-			if haveDrainedNClients
-				break
-		if drainedCount < N
-			logger.log "All clients have been told to reconnectGracefully"
-			clearInterval @interval
