@@ -12,20 +12,20 @@ module.exports =
 
 		# Set a 1 second interval and disconnect <rate> clients each time
 		@interval = setInterval () =>
-			if !clients.length
+			if !drainClients clients, rate
 				clearInterval @interval
-				return
-			doDrain clients, rate
 		,1000
 
 	drainClients: (clients, rate) ->
 
 			clientSet = clients.splice(0, rate)
 
-			if !clientSet
+			if !clientSet.length
 				logger.log "All clients have been told to reconnectGracefully"
-				return
+				return false
 
 			for client in clientSet
 				logger.log {client_id: client.id}, "Asking client to reconnect gracefully"
 				client.emit "reconnectGracefully"
+
+			return true
